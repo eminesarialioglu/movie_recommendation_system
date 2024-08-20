@@ -24,7 +24,11 @@ st.markdown("""
 # Movie genre selection options
 movie_types = st.multiselect(
     "Movie Genres",
-    ["Action", "Comedy", "Drama", "Science Fiction", "Horror"]
+    [
+        "Action", "Adventure", "Animation", "Biography", "Comedy", "Crime", "Documentary",
+        "Drama", "Family", "Fantasy", "History", "Horror", "Musical", "Mystery", "Romance",
+        "Science Fiction", "Sport", "Thriller", "War", "Western"
+    ]
 )
 
 # Text input fields for user's favorite movies
