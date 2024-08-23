@@ -43,7 +43,7 @@ if st.button('Get Recommendations'):
             f"The user enjoys movies in the following genres: {movie_types}. "
             f"Their favorite movies are: {favourite_movies}. "
             "Based on these preferences, recommend some movies in a table format. "
-            "Include Name, Genre, Summary, Release Year, Duration, Director, Actors, IMDb Rating, Rotten Tomatoes Rating, Cover Image URL, and a link to the trailer."
+            "Include Name, Genre, Summary, Release Year, Duration, Director, Actors, IMDb Rating, Rotten Tomatoes Rating, and a link to the trailer."
         )
 
         # OpenAI ChatCompletion API'ye istek gönderme
@@ -66,7 +66,7 @@ if st.button('Get Recommendations'):
 
         for line in movie_recommendations:
             columns = line.split('|')
-            if len(columns) >= 11:
+            if len(columns) >= 10:
                 movie_name = columns[0].strip()
                 genre = columns[1].strip()
                 summary = columns[2].strip()
@@ -76,19 +76,18 @@ if st.button('Get Recommendations'):
                 actors = columns[6].strip()
                 imdb_rating = columns[7].strip()
                 rt_rating = columns[8].strip()
-                cover_image_url = columns[9].strip()
-                trailer_link = columns[10].strip() if len(columns) > 10 else "N/A"
+                trailer_link = columns[9].strip() if len(columns) > 10 else "N/A"
 
                 # Her satırı listeye ekle
                 rows.append([
                     movie_name, genre, summary, release_year, duration, director,
-                    actors, imdb_rating, rt_rating, cover_image_url, trailer_link
+                    actors, imdb_rating, rt_rating, trailer_link
                 ])
 
         # Tablonun sütun isimleri
         columns = [
             "Name", "Genre", "Summary", "Release Year", "Duration", "Director",
-            "Actors", "IMDb Rating", "Rotten Tomatoes Rating", "Cover Image URL", "Trailer Link"
+            "Actors", "IMDb Rating", "Rotten Tomatoes Rating","Trailer Link"
         ]
 
         # Pandas DataFrame oluşturma
