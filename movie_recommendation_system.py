@@ -2,7 +2,9 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 import streamlit as st
-from prettytable import PrettyTable
+import pandas as pd
+import re
+import json
 
 print("Loaded")
 # Çevresel değişkenleri yükleme
@@ -10,6 +12,11 @@ load_dotenv()
 
 # OpenAI API anahtarını yükleme
 api_key = os.getenv("OPENAI_API_KEY")
+
+if not api_key:
+    st.error("API anahtarı bulunamadı. Lütfen .env dosyanızı kontrol edin.")
+    st.stop()
+
 
 # Streamlit Başlık
 st.title('Movie Recommendation System')
@@ -31,60 +38,63 @@ movie_types = st.multiselect(
     ]
 )
 
+
 # Text input fields for user's favorite movies
-favorite_movies = []
-for i in range(1, 4):
-    favorite_movies.append(st.text_input(f"{i}. Movie"))
-
-
-#Kullanıcıdan film türleri ve favori filmlerini alma
-"""movie_types = st.text_input("What types of movies do you like? (separated by commas): ")
-favourite_movies = st.text_input("Enter your 3 favourite movies (separated by commas): ")
+favorite_movies = [st.text_input(f"{i}. Movie") for i in range(1, 4)]
 
 if st.button('Get Recommendations'):
-    if not movie_types or not favourite_movies:
-        st.error("Please enter the movie genres and favorite movies.")
-"""
-if st.button('Get Recommendations'):
-    if not movie_types or not all(favorite_movies):
-        st.error("Please fill in both the movie genres and your favorite movies.")
+    if not movie_types or not any(favorite_movies):
+        st.error("Please enter both the movie genres and your favorite movies.")
 
     else:
         # Prompt oluşturma
         prompt = (
-            f"The user enjoys movies in the following genres: {movie_types}. "
-            f"Their favorite movies are: {favorite_movies}. "
-            "Based on these preferences, recommend some movies in a table format. "
-            "The table should include the movie's name, genre,a short summary,and cover image URL."
+            f"The user enjoys movies in the following genres: {', '.join(movie_types)}. "
+            f"Their favorite movies are: {', '.join(favorite_movies)}. "
+            "Based on these preferences, recommend some movies with the following details: "
+            "Name, Genre, Summary, Release Year, Duration, Director, Actors, IMDb Rating, Rotten Tomatoes Rating, Cover Image URL, and a link to the trailer."
         )
+
         client = OpenAI()
         # OpenAI ChatCompletion API'ye istek gönderme
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # "gpt-4" olarak da değiştirebilirsiniz eğer erişiminiz varsa
+            model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a film recommendation system."},
-                {"role": "user", "content": prompt}
+                {"role": "system",
+                 "content": "You are a film recommendation system."
+                 },
+                {"role": "user",
+                 "content": prompt
+                 }
             ]
         )
+        response_text = response.choices[0].message.content
+        st.write("API Yanıtı:", response_text)
 
-        # Dönen cevabı işleme ve tablo formatında gösterme
-        #print("Recommended Movies:")
-        movie_recommendations: list[str] = response.choices[0].message. content. split("\n")[1:]
-        #print(movie_recommendations)  # Yanıtı ekrana yazdırıyoruz
 
-        st.subheader("Recommended Movies")
-        # Tabloyu oluşturma
-        table = PrettyTable()
-        table.field_names = ["Movie Name", "Genre", "Summary", "Cover Image"]
+        # Metinden liste oluşturma
+        def parse_movie_recommendations(text):
+            movies = []
+            entries = re.split(r'\n(?=\d+\.)', text.strip())
+            for entry in entries:
+                movie = {}
+                lines = entry.split('\n')
+                for line in lines:
+                    if line:
+                        parts = line.split(': ', 1)
+                        if len(parts) == 2:
+                            key, value = parts
+                            key = key.strip()
+                            value = value.strip()
+                            if key in ["Name", "Genre", "Summary", "Release Year", "Duration", "Director", "Actors", "IMDb Rating", "Rotten Tomatoes Rating", "Cover Image URL", "Trailer Link"]:
+                                movie[key] = value
+                if movie:
+                    movies.append(movie)
+            return movies
 
-        # Metni tabloya dönüştürme
-        for line in movie_recommendations:
-            columns = line.split('|')
-            if len(columns) >= 4:
-                movie_name = columns[1].strip()
-                genre = columns[2].strip()
-                summary = columns[3].strip()
-                cover_image_url = columns[4].strip() if len(columns) > 4 else "N/A"
-                table.add_row([movie_name, genre, summary, cover_image_url])
-        st.write("Recommended Movies:")
-        st.text(table)
+        movie_list = parse_movie_recommendations(response_text)
+        st.write("Parsed Recommendations:")
+        if movie_list:
+            st.table(movie_list)
+        else:
+            st.write("No recommendations found. Please check the API response format.")
