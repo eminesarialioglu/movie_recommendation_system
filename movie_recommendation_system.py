@@ -59,35 +59,30 @@ if st.button('Get Recommendations'):
             ]
         )
         # Dönen cevabı işleme
+
         movie_recommendations: list[str] = response.choices[0].message.content.split("\n")[1:]
 
         # Tablodaki satırları toplamak için bir liste
         rows = []
 
-        for line in movie_recommendations:
+        for index, line in enumerate(movie_recommendations):
             columns = line.split('|')
-            if len(columns) >= 10:
-                movie_name = columns[0].strip()
-                genre = columns[1].strip()
-                summary = columns[2].strip()
-                release_year = columns[3].strip()
-                duration = columns[4].strip()
-                director = columns[5].strip()
-                actors = columns[6].strip()
-                imdb_rating = columns[7].strip()
-                rt_rating = columns[8].strip()
-                trailer_link = columns[9].strip() if len(columns) > 10 else "N/A"
+            cleaned_columns = [col.strip() for col in columns if col.strip()]
 
-                # Her satırı listeye ekle
-                rows.append([
-                    movie_name, genre, summary, release_year, duration, director,
-                    actors, imdb_rating, rt_rating, trailer_link
-                ])
+            # İlk satır başlık olarak algılanıyorsa atla
+            if index == 0 and len(cleaned_columns) == len(columns):
+                continue
+
+            # Beklenen sütun sayısının altında ise, bu satırı atla
+            if len(cleaned_columns) < 10:
+                continue
+
+            rows.append(cleaned_columns)
 
         # Tablonun sütun isimleri
         columns = [
             "Name", "Genre", "Summary", "Release Year", "Duration", "Director",
-            "Actors", "IMDb Rating", "Rotten Tomatoes Rating","Trailer Link"
+            "Actors", "IMDb Rating", "Rotten Tomatoes Rating", "Trailer Link"
         ]
 
         # Pandas DataFrame oluşturma
